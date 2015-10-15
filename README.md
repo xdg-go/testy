@@ -149,7 +149,7 @@ func TestExample4(t *testing.T) {
 	is := testy.New(t)
 	defer func() { t.Logf(is.Done()) }()
 
-	for i := 0; i <= 2; i++ {
+	for i := -1; i <= 2; i++ {
 		checkEvenPositive(is, i) // Line 13
 	}
 }
