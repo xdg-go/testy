@@ -2,7 +2,7 @@
 
 # Testy – An extensible testing facade
 
-**If Go's standard testing package annoys you, you might like Testy**
+**If Go's standard testing package annoys you, you might like Testy.**
 
 There is a lot to like about Go's [testing](https://golang.org/pkg/testing/)
 package.
@@ -31,7 +31,14 @@ This means:
 The downside is an extra level of log message nesting (which your
 editor's quickfix window should ignore, anyway).
 
-It also gives a few convenient helper functions for common cases.
+Unlike many other [Go testing
+libraries](https://github.com/avelino/awesome-go#testing), it doesn't offer
+an extensive testing framework.  Unlike some assertion libraries, it
+doesn't use stack traces or race-prone print statements.
+
+Testy offers a simple, extensible solution focused on reporting errors
+simply and in the right place.  But it does give a few convenient helper
+functions for the most common tests you're likely to write.
 
 # Examples
 
