@@ -79,7 +79,9 @@ line 12, not from inside the `checkTrue` function.  The `Uplevel` method in
 ## Using Testy helpers
 
 The `checkTrue` pattern is so common that testing true and false are
-built-in to Testy:
+built-in to Testy as `True` and `False`.  There are also `Equal` and
+`Unequal` helpers that use `reflect.DeepEqual` but provide diagnostic
+output on subsequent lines:
 
 ```go
 package example
@@ -89,13 +91,50 @@ import (
 	"testing"
 )
 
+type pair struct {
+	x float32
+	y float32
+}
+
 func TestExample2(t *testing.T) {
 	is := testy.New(t)
 	defer func() { t.Logf(is.Done()) }()
 
-	is.True(1+1 == 3)
-	is.False(2 == 2)
+	is.True(1+1 == 3)                          // Line 17
+	is.False(2 == 2)                           // Line 18
+	is.Equal(1, 2)                             // Line 19
+	is.Equal(1.0, 1)                           // Line 20
+	is.Equal("foo\tbar", "foo\tbaz")           // Line 21
+	is.Equal(true, false)                      // Line 22
+	is.Equal(&pair{1.0, 1.0}, &pair{1.1, 1.0}) // Line 23
+	is.Unequal(42, 42)                         // Line 24
 }
+```
+
+The diagnostic output indicates quotes string and indicates types where
+relevant to allow easier problem diagnosis:
+
+```
+_examples/example2_test.go|15| TestExample2: 8 tests failed
+_examples/example2_test.go|17| Expression was not true
+_examples/example2_test.go|18| Expression was not false
+_examples/example2_test.go|19| Values were not equal:
+|| 			   Got: 1 (int)
+|| 			Wanted: 2 (int)
+_examples/example2_test.go|20| Values were not equal:
+|| 			   Got: 1 (float64)
+|| 			Wanted: 1 (int)
+_examples/example2_test.go|21| Values were not equal:
+|| 			   Got: "foo\tbar"
+|| 			Wanted: "foo\tbaz"
+_examples/example2_test.go|22| Values were not equal:
+|| 			   Got: true
+|| 			Wanted: false
+_examples/example2_test.go|23| Values were not equal:
+|| 			   Got: &{1 1} (*example.pair)
+|| 			Wanted: &{1.1 1} (*example.pair)
+_examples/example2_test.go|24| Values were not unequal:
+|| 			   Got: 42 (int)
 ```
 
 ## Using error labels
