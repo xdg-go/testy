@@ -17,6 +17,9 @@ import (
 	"testing"
 )
 
+// T is a facade around the testing.T type passed to Test functions.  It
+// intercepts log messages to attribute them to the correct level of the
+// call stack.
 type T struct {
 	test      *testing.T
 	context   *accumulator
@@ -27,6 +30,10 @@ type T struct {
 
 var nameStripper *regexp.Regexp = regexp.MustCompile(`^.*\.`)
 
+// New wraps a testy.T struct around a testing.T struct. The resulting
+// struct can be used in the same way the testing.T struct would be, plus
+// has additional methods specific to Testy.  It calls NewCase with
+// the calling function's name as the test case name.
 func New(t *testing.T) *T {
 	var n string
 	pc, _, _, ok := runtime.Caller(1)
@@ -39,34 +46,50 @@ func New(t *testing.T) *T {
 	return NewCase(t, n)
 }
 
+// NewCase wraps a testy.T struct around a testing.T struct. The resulting
+// struct can be used in the same way the testing.T struct would be, plus
+// has additional methods specific to Testy.  It takes a name argument
+// that is used in the summary line during log output.
 func NewCase(t *testing.T, name string) *T {
 	return &T{test: t, caseName: name, callDepth: 1, context: &accumulator{}}
 }
 
+// Label returns a testy.T struct that will prefix a label to all log
+// messages.  The label is constructed by concatenating arguments separated
+// by a space (like fmt.Sprintln without the trailing space).
 func (t T) Label(s ...interface{}) *T {
 	t.label = strings.TrimSpace(fmt.Sprintln(s...)) + ": "
 	return &t
 }
 
+// Uplevel returns a testy.T struct that will report log messages 'depth'
+// frames higher up the call stack.
 func (t T) Uplevel(depth int) *T {
 	t.callDepth += depth
 	return &t
 }
 
+// Done returns any test log output formatted suitably for passing to a
+// testing.T struct Logf method.
 func (t *T) Done() string {
 	return t.summary() + strings.Join(t.context.outputCopy(), "\n")
 }
 
+// FailCount returns the number of Fail, Error, Fatal or test helper
+// failures recorded by the testy.T struct.
 func (t T) FailCount() int {
 	return t.context.getFailCount()
 }
 
+// Output returns a copy of the slice of log messages recorded by the
+// testy.T struct.
 func (t T) Output() []string {
 	return t.context.outputCopy()
 }
 
 // Helper functions
 
+// True checks if its argument is true; if false, it logs an error.
 func (t *T) True(cond bool) {
 	if !cond {
 		t.context.incFailCount()
@@ -75,6 +98,7 @@ func (t *T) True(cond bool) {
 	}
 }
 
+// False checks if its argument is false; if true, it logs an error.
 func (t *T) False(cond bool) {
 	if cond {
 		t.context.incFailCount()
@@ -86,66 +110,83 @@ func (t *T) False(cond bool) {
 // Facade functions.  Function definitions and implementations adapted from
 // testing.go in the Go core library
 
+// Fail marks the test as having failed.
 func (t *T) Fail() {
 	t.context.incFailCount()
 	t.test.Fail()
 }
 
+// FailNow marks the test as having failed and stops execution.  It is
+// subject to the same restrictions as FailNow from the testing package.
 func (t *T) FailNow() {
 	t.context.incFailCount()
 	t.test.FailNow()
 }
 
+// Failed reports whether the test has been marked as having failed.
 func (t *T) Failed() bool {
 	return t.test.Failed()
 }
 
+// Log joins its arguments by spaces like fmt.Sprintln and records the
+// result for later delivery by the Done method.
 func (t *T) Log(args ...interface{}) {
 	t.context.log(t.decorate(fmt.Sprintln(args...)))
 }
 
+// Logf joins its arguments like fmt.Sprintf and records the result for later
+// delivery by the Done method.
 func (t *T) Logf(format string, args ...interface{}) {
 	t.context.log(t.decorate(fmt.Sprintf(format, args...)))
 }
 
+// Error is equivalent to Log followed by Fail
 func (t *T) Error(args ...interface{}) {
 	t.context.incFailCount()
 	t.context.log(t.decorate(fmt.Sprintln(args...)))
 	t.test.Fail()
 }
 
+// Errorf is equivalent to Logf followed by Fail
 func (t *T) Errorf(format string, args ...interface{}) {
 	t.context.incFailCount()
 	t.context.log(t.decorate(fmt.Sprintf(format, args...)))
 	t.test.Fail()
 }
 
+// Fatal is equivalent to Log followed by FailNow
 func (t *T) Fatal(args ...interface{}) {
 	t.context.incFailCount()
 	t.context.log(t.decorate(fmt.Sprintln(args...)))
 	t.test.FailNow()
 }
 
+// Fatalf is equivalent to Logf followed by FailNow
 func (t *T) Fatalf(format string, args ...interface{}) {
 	t.context.incFailCount()
 	t.context.log(t.decorate(fmt.Sprintf(format, args...)))
 	t.test.FailNow()
 }
 
+// Skip is equivalent to Log followed by SkipNow
 func (t *T) Skip(args ...interface{}) {
 	t.context.log(t.decorate(fmt.Sprintln(args...)))
 	t.test.SkipNow()
 }
 
+// Skipf is equivalent to Logf followed by SkipNow
 func (t *T) Skipf(format string, args ...interface{}) {
 	t.context.log(t.decorate(fmt.Sprintf(format, args...)))
 	t.test.SkipNow()
 }
 
+// SkipNow marks the test as skipped and halts execution. It is subject to
+// the same restrictions as SkipNow from the testing package.
 func (t *T) SkipNow() {
 	t.test.SkipNow()
 }
 
+// Skipped reports whether the test was skipped.
 func (t *T) Skipped() bool {
 	return t.test.Skipped()
 }
