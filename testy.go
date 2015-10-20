@@ -28,7 +28,7 @@ type T struct {
 	callDepth int
 }
 
-var nameStripper *regexp.Regexp = regexp.MustCompile(`^.*\.`)
+var nameStripper = regexp.MustCompile(`^.*\.`)
 
 // New wraps a testy.T struct around a testing.T struct. The resulting
 // struct can be used in the same way the testing.T struct would be, plus
