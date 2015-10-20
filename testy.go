@@ -10,8 +10,10 @@ package testy
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -103,6 +105,29 @@ func (t *T) False(cond bool) {
 	if cond {
 		t.context.incFailCount()
 		t.context.log(t.decorate("Expression was not false"))
+		t.test.Fail()
+	}
+}
+
+// Equal checks if its arguments are equal using reflect.DeepEqual.  It
+// is subject to all the usual limitations of that function.  If the values
+// are not equal, an error is logged and the 'got' and 'want' values are
+// logged on subsequent lines for comparison.
+func (t *T) Equal(got, want interface{}) {
+	if !reflect.DeepEqual(got, want) {
+		t.context.incFailCount()
+		t.context.log(t.decorate(
+			fmt.Sprintf("Values were not equal:\n%s%s", diag("   Got", got), diag("Wanted", want))))
+		t.test.Fail()
+	}
+}
+
+// Unequal inverts the logic of Equal but is otherwise similar.
+func (t *T) Unequal(got, want interface{}) {
+	if reflect.DeepEqual(got, want) {
+		t.context.incFailCount()
+		t.context.log(t.decorate(
+			fmt.Sprintf("Values were not unequal:\n%s", diag("   Got", got))))
 		t.test.Fail()
 	}
 }
@@ -274,4 +299,18 @@ func (a *accumulator) incFailCount() {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	a.failCount++
+}
+
+// internal comparison support functions
+
+func diag(prefix string, value interface{}) string {
+	vType := reflect.TypeOf(value)
+	switch vType.Kind() {
+	case reflect.String:
+		return fmt.Sprintf("%s: %s\n", prefix, strconv.Quote(value.(string)))
+	case reflect.Bool:
+		return fmt.Sprintf("%s: %v\n", prefix, value)
+	default:
+		return fmt.Sprintf("%s: %v (%v)\n", prefix, value, vType)
+	}
 }
