@@ -1,3 +1,5 @@
+[![GoDoc](https://godoc.org/github.com/xdg/testy?status.svg)](https://godoc.org/github.com/xdg/testy)
+
 # Testy – An extensible testing facade
 
 **If Go's standard testing package annoys you, you might like Testy**
