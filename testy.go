@@ -230,8 +230,9 @@ func (t T) decorate(s string) string {
 	}
 	for i, line := range lines {
 		if i > 0 {
-			// Second and subsequent lines are indented an extra tab.
-			buf.WriteString("\n\t\t")
+			// Unlike package testing, second and subsequent lines are NOT
+			// indented an extra tab as package testing will do it for us.
+			buf.WriteString("\n\t")
 		}
 		buf.WriteString(line)
 	}
