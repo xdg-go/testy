@@ -111,8 +111,8 @@ func TestExample2(t *testing.T) {
 }
 ```
 
-The diagnostic output indicates quotes string and indicates types where
-relevant to allow easier problem diagnosis:
+The diagnostic output quotes strings and indicates types where necessary
+to disambiguate.  For example:
 
 ```
 _examples/example2_test.go|15| TestExample2: 8 tests failed
