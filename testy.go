@@ -4,7 +4,106 @@
 // not use this file except in compliance with the License. You may obtain
 // a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
-// Package testy is an extensible facade around Go's core testing library
+// Package testy is an extensible facade around Go's core testing library.
+//
+// Go's core testing package doesn't let you refactor repetitive tests
+// without reporting errors from the wrong place in the code.  Testy
+// implements a facade around the testing package and hijacks its logging
+// features.  This means:
+//
+// * You can report test errors at any level up the call stack.
+//
+// * You can label all errors in a scope to disambiguate repetitive tests.
+//
+// The downside is an extra level of log message nesting (which your
+// editor's quickfix window should ignore, anyway).
+//
+// It gives a few convenient helper functions for common cases and makes it
+// easy to implement your own.
+//
+// The following example shows how to set up testy and use test helpers.
+// In particular, note the use of 'defer' and a closure to schedule testy
+// to output the log at the end of the function's execution.
+//
+//	package example
+//
+// 	import (
+// 		"github.com/xdg/testy"
+// 		"testing"
+// 	)
+//
+// 	func TestExample(t *testing.T) {
+// 		is := testy.New(t)
+// 		defer func() { t.Logf(is.Done()) }()
+//
+// 		is.True(1+1 == 3)
+// 		is.False(2 == 2)
+//
+// 		is.Equal(1, 2)
+// 		is.Equal(1.0, 1)
+// 		is.Equal("foo\tbar", "foo\tbaz")
+// 		is.Equal(true, false)
+//
+// 		is.Unequal(42, 42)
+// 	}
+//
+// Each error will be reported at the calling line.  Calls to 'Equal' and
+// 'Unequal' will return diagnostic details.  Here is how some of the output
+// would look in Vim's quickfix window:
+//
+//	...
+// 	_examples/example_test.go|15| Values were not equal:
+// 	|| 			   Got: 1 (int)
+// 	|| 			Wanted: 2 (int)
+// 	_examples/example_test.go|16| Values were not equal:
+// 	|| 			   Got: 1 (float64)
+// 	|| 			Wanted: 1 (int)
+// 	_examples/example_test.go|17| Values were not equal:
+// 	|| 			   Got: "foo\tbar"
+// 	|| 			Wanted: "foo\tbaz"
+//	...
+//
+// You can use the 'Uplevel' and 'Label' methods to return new facades, which
+// you can use to implement custom helpers in various ways:
+//
+// 	func TestExample(t *testing.T) {
+// 		is := testy.New(t)
+// 		defer func() { t.Logf(is.Done()) }()
+//
+// 		// Check for numbers equal to 3
+// 		for i := 1; i <= 5; i++ {
+// 			is.Label("Checking", i).True(i == 3) // Line 13
+// 		}
+//
+// 		// Check for positive, even numbers
+// 		for i := -1; i <= 2; i++ {
+// 			checkEvenPositive(is, i)             // Line 18
+// 		}
+// 	}
+//
+// 	func checkEvenPositive(is *testy.T, n int) {
+//		// Report one level up with a custom label
+// 		is = is.Uplevel(1).Label("Testing", n)
+//
+// 		if n < 1 {
+// 			is.Error("Value was not positive")
+// 		}
+// 		if n%2 != 0 {
+// 			is.Error("Value was not even")
+// 		}
+// 	}
+//
+// The example above would return errors to a quickfix window like this:
+// 	...
+// 	_examples/example_test.go|13| Checking 1: Expression was not true
+// 	_examples/example_test.go|13| Checking 2: Expression was not true
+// 	_examples/example_test.go|13| Checking 4: Expression was not true
+// 	_examples/example_test.go|13| Checking 5: Expression was not true
+// 	_examples/example_test.go|18| Testing -1: Value was not positive
+// 	_examples/example_test.go|18| Testing -1: Value was not even
+// 	_examples/example_test.go|18| Testing 0: Value was not positive
+// 	_examples/example_test.go|18| Testing 1: Value was not even
+// 	...
 package testy
 
 import (
