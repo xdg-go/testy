@@ -157,7 +157,8 @@ func NewCase(t *testing.T, name string) *T {
 
 // Label returns a testy.T struct that will prefix a label to all log
 // messages.  The label is constructed by concatenating arguments separated
-// by a space (like fmt.Sprintln without the trailing space).
+// by a space (like fmt.Sprintln without the trailing space).  A colon
+// character and space will be added automatically
 func (t T) Label(s ...interface{}) *T {
 	t.label = strings.TrimSpace(fmt.Sprintln(s...)) + ": "
 	return &t
