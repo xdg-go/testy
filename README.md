@@ -1,4 +1,5 @@
 [![GoDoc](https://godoc.org/github.com/xdg/testy?status.svg)](https://godoc.org/github.com/xdg/testy)
+[![Build Status](https://travis-ci.org/xdg/testy.svg?branch=master)](https://travis-ci.org/xdg/testy)
 
 # Testy – An extensible testing facade
 
