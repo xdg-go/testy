@@ -45,6 +45,8 @@
 // 		is.Equal(true, false)
 //
 // 		is.Unequal(42, 42)
+//
+// 		is.NotNil(is)
 // 	}
 //
 // Each error will be reported at the calling line.  Calls to 'Equal' and
@@ -209,11 +211,52 @@ func (t *T) False(cond bool) {
 	}
 }
 
+func checkNil(x interface{}) bool {
+	if x == nil {
+		return true
+	}
+
+	v := reflect.ValueOf(x)
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+		return v.IsNil()
+	}
+
+	return false
+}
+
+// Nil checks if its argument is nil (literal or nil slice, map, etc.); if
+// non-nil, it logs an error.
+func (t *T) Nil(got interface{}) {
+	if !checkNil(got) {
+		t.context.incFailCount()
+		t.context.log(t.decorate("Expression was not nil"))
+		t.test.Fail()
+	}
+}
+
+// Nil checks if its argument is nil (literal or nil slice, map, etc.); if
+// non-nil, it logs an error.
+func (t *T) NotNil(got interface{}) {
+	if checkNil(got) {
+		t.context.incFailCount()
+		t.context.log(t.decorate("Expression was nil"))
+		t.test.Fail()
+	}
+}
+
 // Equal checks if its arguments are equal using reflect.DeepEqual.  It
 // is subject to all the usual limitations of that function.  If the values
 // are not equal, an error is logged and the 'got' and 'want' values are
 // logged on subsequent lines for comparison.
 func (t *T) Equal(got, want interface{}) {
+	if got == nil || want == nil {
+		t.context.incFailCount()
+		t.context.log(t.decorate(
+			fmt.Sprintf("Can't safely compare nil values for equality:\n%s%s", diag("   Got", got), diag("Wanted", want))))
+		t.test.Fail()
+		return
+	}
 	if !reflect.DeepEqual(got, want) {
 		t.context.incFailCount()
 		t.context.log(t.decorate(
@@ -224,10 +267,16 @@ func (t *T) Equal(got, want interface{}) {
 
 // Unequal inverts the logic of Equal but is otherwise similar.
 func (t *T) Unequal(got, want interface{}) {
-	if reflect.DeepEqual(got, want) {
+	if got == nil || want == nil {
 		t.context.incFailCount()
 		t.context.log(t.decorate(
-			fmt.Sprintf("Values were not unequal:\n%s", diag("   Got", got))))
+			fmt.Sprintf("Can't safely compare nil values for equality:\n%s%s", diag("   Got", got), diag("Got", want))))
+		t.test.Fail()
+		return
+	}
+	if reflect.DeepEqual(got, want) {
+		t.context.incFailCount()
+		t.context.log(t.decorate(fmt.Sprintf("Values were not unequal:\n%s", diag("  Both", got))))
 		t.test.Fail()
 	}
 }
@@ -404,6 +453,9 @@ func (a *accumulator) incFailCount() {
 // internal comparison support functions
 
 func diag(prefix string, value interface{}) string {
+	if value == nil {
+		return fmt.Sprintf("%s: nil\n", prefix)
+	}
 	vType := reflect.TypeOf(value)
 	switch vType.Kind() {
 	case reflect.String:

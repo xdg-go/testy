@@ -15,32 +15,48 @@ import (
 func TestHelpers(t *testing.T) {
 	mock := &testing.T{}
 	test := testy.New(mock)
+	var nilSlice []byte
+	var aNil *int
 
 	// not failures
 	test.True(true)
 	test.False(false)
+	test.NotNil(test)
+	test.Nil(aNil)
+	test.Nil(nilSlice)
 
-	// failures on lines 24+; check later
+	// failures on lines 29+; check later
 	test.True(false)
 	test.False(true)
 	test.Equal(1, 2)
 	test.Unequal("foo", "foo")
 	test.Unequal(true, true)
+	test.Nil(test)
+	test.NotNil(aNil)
+	test.Equal(test, nil)
+	test.Equal(nil, test)
+	test.Unequal(nilSlice, nil)
+	test.Unequal(nil, nilSlice)
+
+	// Uncomment for diagnostic output
+	// 	for i, s := range test.Output() {
+	// 		t.Log(i, s)
+	// 	}
 
 	fc := test.FailCount()
-	expect := 5
+	expect := 11
 	if fc != expect {
 		t.Errorf("Incorrect FailCount. Got %d, but expected %d", fc, expect)
 	}
 
 	output := test.Output()
-	if ok, _ := regexp.MatchString("testy_test.go:24: Expression was not true", output[0]); !ok {
+	if ok, _ := regexp.MatchString("testy_test.go:29: Expression was not true", output[0]); !ok {
 		t.Errorf("True() had wrong error message: '%s'", output[0])
 	}
-	if ok, _ := regexp.MatchString("testy_test.go:25: Expression was not false", output[1]); !ok {
+	if ok, _ := regexp.MatchString("testy_test.go:30: Expression was not false", output[1]); !ok {
 		t.Errorf("False() had wrong error message: '%s'", output[1])
 	}
-	if ok, _ := regexp.MatchString("testy_test.go:26: Values were not equal", output[2]); !ok {
+	if ok, _ := regexp.MatchString("testy_test.go:31: Values were not equal", output[2]); !ok {
 		t.Errorf("Equal() had wrong error message: '%s'", output[2])
 	}
 	if ok, _ := regexp.MatchString(`(?m)^\s+Got: 1 \(int\)`, output[2]); !ok {
@@ -49,17 +65,35 @@ func TestHelpers(t *testing.T) {
 	if ok, _ := regexp.MatchString(`(?m)^\s+Wanted: 2 \(int\)`, output[2]); !ok {
 		t.Errorf("Equal() had wrong 'got' message: '%s'", output[2])
 	}
-	if ok, _ := regexp.MatchString("testy_test.go:27: Values were not unequal", output[3]); !ok {
+	if ok, _ := regexp.MatchString("testy_test.go:32: Values were not unequal", output[3]); !ok {
 		t.Errorf("Unequal() had wrong error message: '%s'", output[3])
 	}
-	if ok, _ := regexp.MatchString(`(?m)^\s+Got: "foo"`, output[3]); !ok {
+	if ok, _ := regexp.MatchString(`(?m)^\s+Both: "foo"`, output[3]); !ok {
 		t.Errorf("Unequal() had wrong 'got' message: '%s'", output[3])
 	}
-	if ok, _ := regexp.MatchString("testy_test.go:28: Values were not unequal", output[4]); !ok {
+	if ok, _ := regexp.MatchString("testy_test.go:33: Values were not unequal", output[4]); !ok {
 		t.Errorf("Unequal() had wrong error message: '%s'", output[4])
 	}
-	if ok, _ := regexp.MatchString(`(?m)^\s+Got: true`, output[4]); !ok {
+	if ok, _ := regexp.MatchString(`(?m)^\s+Both: true`, output[4]); !ok {
 		t.Errorf("Unequal() had wrong 'got' message: '%s'", output[4])
+	}
+	if ok, _ := regexp.MatchString("testy_test.go:34: Expression was not nil", output[5]); !ok {
+		t.Errorf("Nil() had wrong error message: '%s'", output[5])
+	}
+	if ok, _ := regexp.MatchString("testy_test.go:35: Expression was nil", output[6]); !ok {
+		t.Errorf("NotNil() had wrong error message: '%s'", output[6])
+	}
+	if ok, _ := regexp.MatchString(`testy_test.go:36: Can't safely compare nil values for equality`, output[7]); !ok {
+		t.Errorf("Equal() had wrong error message: '%s'", output[7])
+	}
+	if ok, _ := regexp.MatchString(`testy_test.go:37: Can't safely compare nil values for equality`, output[8]); !ok {
+		t.Errorf("Equal() had wrong error message: '%s'", output[8])
+	}
+	if ok, _ := regexp.MatchString(`testy_test.go:38: Can't safely compare nil values for equality`, output[9]); !ok {
+		t.Errorf("Unequal() had wrong error message: '%s'", output[9])
+	}
+	if ok, _ := regexp.MatchString(`testy_test.go:39: Can't safely compare nil values for equality`, output[10]); !ok {
+		t.Errorf("Unequal() had wrong error message: '%s'", output[10])
 	}
 }
 
@@ -67,10 +101,10 @@ func TestLabelUplevel(t *testing.T) {
 	mock := &testing.T{}
 	test := testy.New(mock)
 
-	checkEven(test, 3) // Line 70
+	checkEven(test, 3) // Line 104; set below
 
 	output := test.Output()
-	if ok, _ := regexp.MatchString(`testy_test.go:70: Testing 3: Value is not even`, output[0]); !ok {
+	if ok, _ := regexp.MatchString(`testy_test.go:104: Testing 3: Value is not even`, output[0]); !ok {
 		t.Errorf("checkEven() had wrong error message: '%s'", output[0])
 	}
 
